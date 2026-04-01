@@ -183,4 +183,79 @@ static int getVectorWidth() {
         return 8;
     return 4;
 }
+
+/**
+ * Get whether this is an ARM CPU that supports NEON.
+ */
+static bool isNeonSupported() {
+#ifdef __ARM_NEON
+    // On Apple Silicon, NEON is always available
+    #ifdef __APPLE__
+        return true;
+    #else
+        // For Android and Linux ARM, check if NEON is available
+        #ifdef __ANDROID__
+            return (android_getCpuFeatures() & ANDROID_CPU_ARM_FEATURE_NEON) != 0;
+        #else
+            // Try to detect NEON on Linux ARM
+            FILE* fp = fopen("/proc/cpuinfo", "r");
+            if (fp) {
+                char line[256];
+                while (fgets(line, sizeof(line), fp)) {
+                    if (strstr(line, "Features") && strstr(line, "neon")) {
+                        fclose(fp);
+                        return true;
+                    }
+                }
+                fclose(fp);
+            }
+        #endif
+    #endif
+#endif
+    return false;
+}
+
+/**
+ * Get information about Apple M5 Max chip features.
+ */
+static void getM5MaxFeatures(int& cpuCores, int& gpuCores) {
+    #ifdef __APPLE__
+        // Check if we're running on Apple Silicon
+        int isAppleSilicon = 0;
+        size_t len = sizeof(isAppleSilicon);
+        sysctlbyname("hw.machine", NULL, &len, NULL, 0);
+        
+        // Detect M5 Max based on processor name
+        char processorName[256];
+        len = sizeof(processorName);
+        if (sysctlbyname("machdep.cpu.brand_string", processorName, &len, NULL, 0) == 0 || 
+            sysctlbyname("hw.cpufrequency", processorName, &len, NULL, 0) == 0) {
+            
+            // M5 Max has 14 CPU cores (6 performance + 8 efficiency) and up to 40 GPU cores
+            cpuCores = 14;
+            gpuCores = 40;
+        } else {
+            // Default to generic Apple Silicon values
+            cpuCores = 10;  // M1/M2 default
+            gpuCores = 10;
+        }
+    #else
+        cpuCores = 0;
+        gpuCores = 0;
+    #endif
+}
+
+/**
+ * Get the maximum supported size for vectors in multiples of four bytes.  This
+ * is the number of int or float values that can be contained in a vector.
+ */
+static int getVectorWidth() {
+    if (isAvxSupported())
+        return 8;
+#ifdef __ARM_NEON
+    if (isNeonSupported())
+        return 4;  // NEON uses 128-bit vectors = 4 floats
+#endif
+    return 4;
+}
 #endif // OPENMM_HARDWARE_H_

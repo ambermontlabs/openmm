@@ -32,7 +32,16 @@ CpuNonbondedForce* createCpuNonbondedForceVec4(const CpuNeighborList& neighbors)
 CpuNonbondedForce* createCpuNonbondedForceAvx(const CpuNeighborList& neighbors);
 CpuNonbondedForce* createCpuNonbondedForceAvx2(const CpuNeighborList& neighbors);
 
+#ifdef __ARM_NEON
+CpuNonbondedForce* createCpuNonbondedForceNeon(const CpuNeighborList& neighbors);
+#endif
+
 CpuNonbondedForce* createCpuNonbondedForceVec(const CpuNeighborList& neighbors) {
+#ifdef __ARM_NEON
+    if (isNeonSupported())
+        return createCpuNonbondedForceNeon(neighbors);
+    else
+#endif
     if (isAvx2Supported())
         return createCpuNonbondedForceAvx2(neighbors);
     else if (isAvxSupported())

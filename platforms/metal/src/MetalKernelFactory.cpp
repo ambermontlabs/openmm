@@ -1,3 +1,4 @@
+
 /* -------------------------------------------------------------------------- *
  *                                   OpenMM                                   *
  * -------------------------------------------------------------------------- *
@@ -5,7 +6,7 @@
  * See https://openmm.org/development.                                        *
  *                                                                            *
  * Portions copyright (c) 2025 Stanford University and the Authors.           *
- * Authors: Evan Pretti                                                       *
+ * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -27,30 +28,30 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
-#include "CpuConstantPotentialForceFvec.h"
-#include "CpuNeighborList.h"
-#include "openmm/internal/hardware.h"
+#include "MetalKernelFactory.h"
+#include "MetalPlatform.h"
 
 using namespace OpenMM;
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec4();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx2();
+#ifdef __APPLE__
+#include <dlfcn.h>
 
-#ifdef __ARM_NEON
-CpuConstantPotentialForce* createCpuConstantPotentialForceNeon();
+static bool isMetalAvailable() {
+    void* lib = dlopen("/System/Library/Frameworks/Metal.framework/Metal", RTLD_LAZY);
+    if (lib) {
+        dlclose(lib);
+        return true;
+    }
+    return false;
+}
+
 #endif
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec() {
-#ifdef __ARM_NEON
-    if (isNeonSupported())
-        return createCpuConstantPotentialForceNeon();
-    else
+KernelImpl* MetalKernelFactory::createKernelImpl(std::string name, const Platform& platform, ContextImpl& context) const {
+#ifdef __APPLE__
+    if (!isMetalAvailable()) {
+        throw OpenMMException("Metal is not available on this system");
+    }
 #endif
-    if (isAvx2Supported())
-        return createCpuConstantPotentialForceAvx2();
-    else if (isAvxSupported())
-        return createCpuConstantPotentialForceAvx();
-    else
-        return createCpuConstantPotentialForceVec4();
+    throw OpenMMException((std::string("Tried to create kernel with illegal kernel name '") + name + "'").c_str());
 }

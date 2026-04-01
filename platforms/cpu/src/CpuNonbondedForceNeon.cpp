@@ -1,6 +1,6 @@
 
-/* Portions copyright (c) 2022 Stanford University and Simbios.
- * Contributors: Peter Eastman
+/* Portions copyright (c) 2006-2015 Stanford University and Simbios.
+ * Contributors: Pande Group
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,26 +22,19 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "CpuCustomNonbondedForceFvec.h"
-#include "openmm/internal/hardware.h"
-
-using namespace OpenMM;
-
-CpuCustomNonbondedForce* createCpuCustomNonbondedForceVec4(ThreadPool& threads, const CpuNeighborList& neighbors);
-CpuCustomNonbondedForce* createCpuCustomNonbondedForceAvx(ThreadPool& threads, const CpuNeighborList& neighbors);
+#include "CpuNonbondedForceFvec.h"
+#include "CpuNeighborList.h"
+#include "openmm/OpenMMException.h"
 
 #ifdef __ARM_NEON
-CpuCustomNonbondedForce* createCpuCustomNonbondedForceNeon(ThreadPool& threads, const CpuNeighborList& neighbors);
-#endif
+#include "openmm/internal/vectorize_neon.h"
 
-CpuCustomNonbondedForce* OpenMM::createCpuCustomNonbondedForce(ThreadPool& threads, const CpuNeighborList& neighbors) {
-#ifdef __ARM_NEON
-    if (isNeonSupported())
-        return createCpuCustomNonbondedForceNeon(threads, neighbors);
-    else
-#endif
-    if (isAvxSupported())
-        return createCpuCustomNonbondedForceAvx(threads, neighbors);
-    else
-        return createCpuCustomNonbondedForceVec4(threads, neighbors);
+OpenMM::CpuNonbondedForce* createCpuNonbondedForceNeon(const OpenMM::CpuNeighborList& neighbors) {
+    return new OpenMM::CpuNonbondedForceFvec<fvec4>(neighbors);
 }
+
+#else
+OpenMM::CpuNonbondedForce* createCpuNonbondedForceNeon(const OpenMM::CpuNeighborList& neighbors) {
+   throw OpenMM::OpenMMException("Internal error: OpenMM was compiled without NEON support");
+}
+#endif

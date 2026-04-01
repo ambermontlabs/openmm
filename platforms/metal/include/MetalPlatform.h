@@ -5,7 +5,7 @@
  * See https://openmm.org/development.                                        *
  *                                                                            *
  * Portions copyright (c) 2025 Stanford University and the Authors.           *
- * Authors: Evan Pretti                                                       *
+ * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -27,30 +27,50 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
-#include "CpuConstantPotentialForceFvec.h"
-#include "CpuNeighborList.h"
-#include "openmm/internal/hardware.h"
+#ifndef OPENMM_METALPLATFORM_H_
+#define OPENMM_METALPLATFORM_H_
 
-using namespace OpenMM;
+#include "openmm/Platform.h"
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec4();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx2();
+namespace OpenMM {
 
-#ifdef __ARM_NEON
-CpuConstantPotentialForce* createCpuConstantPotentialForceNeon();
-#endif
+/**
+ * This class is a Platform that uses Metal for GPU acceleration on Apple Silicon.
+ */
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec() {
-#ifdef __ARM_NEON
-    if (isNeonSupported())
-        return createCpuConstantPotentialForceNeon();
-    else
-#endif
-    if (isAvx2Supported())
-        return createCpuConstantPotentialForceAvx2();
-    else if (isAvxSupported())
-        return createCpuConstantPotentialForceAvx();
-    else
-        return createCpuConstantPotentialForceVec4();
-}
+class OPENMM_EXPORT_METAL MetalPlatform : public Platform {
+public:
+    MetalPlatform();
+    
+    /**
+     * Get the name of this platform.
+     */
+    const std::string& getName() const {
+        static const std::string name = "Metal";
+        return name;
+    }
+    
+    /**
+     * Get an estimate of how fast this Platform class is.
+     */
+    double getSpeed() const;
+    
+    /**
+     * Get whether this Platform supports double precision arithmetic.
+     */
+    bool supportsDoublePrecision() const {
+        return false;
+    }
+    
+    /**
+     * Check whether this platform is supported on the current system.
+     */
+    static bool isProcessorSupported();
+    
+private:
+    friend class MetalKernelFactory;
+};
+
+} // namespace OpenMM
+
+#endif // OPENMM_METALPLATFORM_H_
