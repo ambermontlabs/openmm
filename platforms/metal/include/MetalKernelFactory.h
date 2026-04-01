@@ -5,7 +5,7 @@
  * See https://openmm.org/development.                                        *
  *                                                                            *
  * Portions copyright (c) 2025 Stanford University and the Authors.           *
- * Authors: Evan Pretti                                                       *
+ * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -27,30 +27,22 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
-#include "CpuConstantPotentialForceFvec.h"
-#include "CpuNeighborList.h"
-#include "openmm/internal/hardware.h"
+#ifndef OPENMM_METALKERNELFACTORY_H_
+#define OPENMM_METALKERNELFACTORY_H_
 
-using namespace OpenMM;
+#include "openmm/common/KernelFactory.h"
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec4();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx2();
+namespace OpenMM {
 
-#ifdef __ARM_NEON
-CpuConstantPotentialForce* createCpuConstantPotentialForceNeon();
-#endif
+/**
+ * This is the KernelFactory for the Metal platform.
+ */
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec() {
-#ifdef __ARM_NEON
-    if (isNeonSupported())
-        return createCpuConstantPotentialForceNeon();
-    else
-#endif
-    if (isAvx2Supported())
-        return createCpuConstantPotentialForceAvx2();
-    else if (isAvxSupported())
-        return createCpuConstantPotentialForceAvx();
-    else
-        return createCpuConstantPotentialForceVec4();
-}
+class OPENMM_EXPORT_METAL MetalKernelFactory : public KernelFactory {
+public:
+    KernelImpl* createKernelImpl(std::string name, const Platform& platform, ContextImpl& context) const;
+};
+
+} // namespace OpenMM
+
+#endif // OPENMM_METALKERNELFACTORY_H_

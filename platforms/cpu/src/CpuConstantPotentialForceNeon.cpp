@@ -1,3 +1,4 @@
+
 /* -------------------------------------------------------------------------- *
  *                                   OpenMM                                   *
  * -------------------------------------------------------------------------- *
@@ -28,29 +29,16 @@
  * -------------------------------------------------------------------------- */
 
 #include "CpuConstantPotentialForceFvec.h"
-#include "CpuNeighborList.h"
-#include "openmm/internal/hardware.h"
-
-using namespace OpenMM;
-
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec4();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx2();
+#include "openmm/internal/vectorize_neon.h"
 
 #ifdef __ARM_NEON
-CpuConstantPotentialForce* createCpuConstantPotentialForceNeon();
-#endif
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec() {
-#ifdef __ARM_NEON
-    if (isNeonSupported())
-        return createCpuConstantPotentialForceNeon();
-    else
-#endif
-    if (isAvx2Supported())
-        return createCpuConstantPotentialForceAvx2();
-    else if (isAvxSupported())
-        return createCpuConstantPotentialForceAvx();
-    else
-        return createCpuConstantPotentialForceVec4();
+OpenMM::CpuConstantPotentialForce* createCpuConstantPotentialForceNeon() {
+    return new OpenMM::CpuConstantPotentialForceFvec<fvec4>();
 }
+
+#else
+OpenMM::CpuConstantPotentialForce* createCpuConstantPotentialForceNeon() {
+   throw OpenMM::OpenMMException("Internal error: OpenMM was compiled without NEON support");
+}
+#endif

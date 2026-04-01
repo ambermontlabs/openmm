@@ -348,6 +348,15 @@ The choice of which platform to use for a simulation depends on various factors:
    OpenCL platform running on the CPU.
 #. The CUDA platform can be used with NVIDIA GPUs.  For using an AMD GPU,
    use the HIP platform (or the OpenCL platform which is usually slower).  For
-   using an Intel or Apple GPU, use the OpenCL platform.
+   using an Intel or Apple GPU, you have several options:
+   
+   * **Metal Platform**: For Apple Silicon (M1, M2, M3, M4, and M5 chips), use the
+     Metal platform for GPU acceleration. This provides the best performance on Apple Silicon.
+   * **OpenCL Platform**: For Intel-based Macs or as a fallback, use the OpenCL platform.
+   * **CPU Platform with NEON**: The CPU platform automatically uses ARM NEON SIMD
+     instructions on Apple Silicon for optimized performance.
+   
+   For the best performance on Apple M5 Max, use the Metal platform which is
+   optimized for its 14-core CPU and 40-core GPU configuration.
 #. The AMOEBA force field works with all platforms, but the performance
    of the Reference and CPU platforms is usually too slow to be useful.

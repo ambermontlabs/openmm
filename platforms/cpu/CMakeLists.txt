@@ -22,6 +22,36 @@ ENDIF(BUILD_TESTING AND OPENMM_BUILD_CPU_TESTS)
 # this CMakeLists file rather than letting CMake visit them as SUBDIRS.
 SET(OPENMM_SOURCE_SUBDIRS .)
 
+# Check for NEON support
+IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    # Check if NEON is available (ARM64 typically has it by default)
+    INCLUDE(CheckCXXSourceCompiles)
+    
+    SET(OPENMM_NEON_SUPPORT FALSE CACHE BOOL "Enable NEON SIMD support")
+    
+    IF(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+        # Check if NEON is available
+        SET(CMAKE_REQUIRED_FLAGS "-mfpu=neon")
+        CHECK_CXX_SOURCE_COMPILES("
+            #include <arm_neon.h>
+            int main() {
+                float32x4_t a = vdupq_n_f32(1.0);
+                return 0;
+            }" NEON_AVAILABLE)
+        UNSET(CMAKE_REQUIRED_FLAGS)
+        
+        IF(NEON_AVAILABLE OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+            # On ARM64, NEON is typically available
+            SET(OPENMM_NEON_SUPPORT TRUE)
+        ENDIF()
+    ENDIF()
+    
+    IF(OPENMM_NEON_SUPPORT)
+        MESSAGE(STATUS "NEON support enabled for ARM64")
+        ADD_DEFINITIONS(-D__ARM_NEON)
+    ENDIF()
+ENDIF()
+
 IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_COMPILER_IS_CLANGXX 1)
 ENDIF(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -86,9 +116,21 @@ FOREACH(subdir ${OPENMM_SOURCE_SUBDIRS})
          FILE(GLOB_RECURSE kernel_files ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/src/kernels/*.cu)
          SET(SOURCE_FILES ${SOURCE_FILES} ${kernel_files})
     ENDIF(MSVC)
+    
+    # Add NEON-specific files if NEON support is enabled
+    IF(OPENMM_NEON_SUPPORT)
+        FILE(GLOB neon_files ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/src/*Neon.cpp)
+        SET(SOURCE_FILES ${SOURCE_FILES} ${neon_files})
+    ENDIF()
+    
     SET(SOURCE_INCLUDE_FILES ${SOURCE_INCLUDE_FILES} ${incl_files})
     INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/include)
 ENDFOREACH(subdir)
+
+# Set NEON compile flags if available
+IF(OPENMM_NEON_SUPPORT)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
+ENDIF()
 
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 

@@ -4,8 +4,8 @@
  * This is part of the OpenMM molecular simulation toolkit.                   *
  * See https://openmm.org/development.                                        *
  *                                                                            *
- * Portions copyright (c) 2025 Stanford University and the Authors.           *
- * Authors: Evan Pretti                                                       *
+ * Portions copyright (c) 2008-2025 Stanford University and the Authors.      *
+ * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -27,30 +27,17 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
-#include "CpuConstantPotentialForceFvec.h"
-#include "CpuNeighborList.h"
-#include "openmm/internal/hardware.h"
+#ifndef OPENMM_WINDOWSEXPORTMETAL_H_
+#define OPENMM_WINDOWSEXPORTMETAL_H_
 
-using namespace OpenMM;
-
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec4();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx();
-CpuConstantPotentialForce* createCpuConstantPotentialForceAvx2();
-
-#ifdef __ARM_NEON
-CpuConstantPotentialForce* createCpuConstantPotentialForceNeon();
+#if defined(_WIN32)
+    #ifdef OPENMM_METAL_BUILDING_DLL
+        #define OPENMM_EXPORT_METAL __declspec(dllexport)
+    #else
+        #define OPENMM_EXPORT_METAL __declspec(dllimport)
+    #endif
+#else
+    #define OPENMM_EXPORT_METAL
 #endif
 
-CpuConstantPotentialForce* createCpuConstantPotentialForceVec() {
-#ifdef __ARM_NEON
-    if (isNeonSupported())
-        return createCpuConstantPotentialForceNeon();
-    else
-#endif
-    if (isAvx2Supported())
-        return createCpuConstantPotentialForceAvx2();
-    else if (isAvxSupported())
-        return createCpuConstantPotentialForceAvx();
-    else
-        return createCpuConstantPotentialForceVec4();
-}
+#endif // OPENMM_WINDOWSEXPORTMETAL_H_
